@@ -1,0 +1,29 @@
+#!/bin/bash
+# Vacuummail - bash script for POP3 mail downloads over netcat
+#
+# Copyright (C) 2010 Artem Kurashov
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+#
+if [ "$#" -lt 1 ]; then
+echo "usage: vacuummail username password server port [clean]"
+exit
+fi
+TIMES=`date +%s`
+FILE0=`echo "mail_$1@$3_$TIMES"`
+MAILN=`echo -e "user $1\npass $2\nstat\nquit\n" | nc $3 $4 | tail -n 2 | head -n 1 | sed 's/^.OK\ //;s/\ .*$//'`
+if [ "$MAILN" -eq 0 ]; then
+echo "Mailbox empty"
+exit
+fi
+if [ "$5" == "clean" ]; then
+for MAILID in `seq $MAILN -1 1`
+do
+echo -e "user $1\npass $2\ndele $MAILID\nquit\n" | nc $3 $4;
+done
+fi
+if [ "$#" -lt 5 ]; then
+for MAILID in `seq 1 $MAILN`
+do
+echo -e "user $1\npass $2\nretr $MAILID\nquit\n" | nc $3 $4 > $FILE0.$MAILID;
+done
+fi
